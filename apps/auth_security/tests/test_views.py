@@ -8,6 +8,9 @@ User = get_user_model()
 class AuthViewsTest(APITestCase):
 
     def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+
         self.email = "viewtest@example.com"
         self.username = "viewuser"
         self.password = "SecurePassword123!"
