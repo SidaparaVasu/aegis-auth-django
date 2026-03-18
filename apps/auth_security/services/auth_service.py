@@ -207,6 +207,24 @@ class AuthService:
 
         # --- Credentials valid from here ---
 
+        # -------------------------------------------------------------
+        # FIRST-TIME EMAIL VERIFICATION INTERCEPTOR
+        # If the feature is ON, and user is NOT verified, halt login.
+        # Send an OTP and return 403 containing VERIFICATION_REQUIRED.
+        # -------------------------------------------------------------
+        from apps.core_system.services.feature_flag_service import FeatureFlagService
+        if FeatureFlagService().is_enabled("email_verification_required"):
+            if not user.is_email_verified:
+                from apps.auth_security.services.otp_service import OTPService
+                from apps.auth_security.constants import OTPPurpose
+                from common.exceptions import EmailVerificationRequiredException
+
+                # Dispatch OTP to email before throwing exception
+                OTPService().send_otp(user=user, purpose=OTPPurpose.EMAIL_VERIFICATION)
+
+                # Throw a specialized exception that the frontend can catch
+                raise EmailVerificationRequiredException()
+
         self.lock_service.record_attempt(identifier, ip, AttemptStatus.SUCCESS)
         self.user_repo.update_last_login(user)
 
