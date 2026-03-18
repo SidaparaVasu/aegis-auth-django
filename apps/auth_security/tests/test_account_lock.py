@@ -45,22 +45,22 @@ class AccountLockTest(TestCase):
         """Failed attempts trigger a lock record when threshold is reached."""
         # 1st fail
         with self.assertRaises(InvalidCredentialsException):
-            self.auth_service.login(self.email, "wrong1")
+            self.auth_service.login(identifier=self.email, password="wrong1")
         
         # 2nd fail
         with self.assertRaises(InvalidCredentialsException):
-            self.auth_service.login(self.email, "wrong2")
+            self.auth_service.login(identifier=self.email, password="wrong2")
 
         # 3rd fail — this should trigger the LOCK
         with self.assertRaises(InvalidCredentialsException):
-            self.auth_service.login(self.email, "wrong3")
+            self.auth_service.login(identifier=self.email, password="wrong3")
 
         # Verify lock exists
         self.assertTrue(AuthAccountLock.objects.filter(user=self.user).exists())
         
         # 4th attempt — should raise AccountLockedException even with CORRECT password
         with self.assertRaises(AccountLockedException) as cm:
-            self.auth_service.login(self.email, self.password)
+            self.auth_service.login(identifier=self.email, password=self.password)
         self.assertIn("temporarily locked", str(cm.exception))
 
     def test_lock_expires(self):
@@ -73,7 +73,7 @@ class AccountLockTest(TestCase):
         )
 
         # Login should now work (LockService.check_lock deletes expired locks)
-        result = self.auth_service.login(self.email, self.password)
+        result = self.auth_service.login(identifier=self.email, password=self.password)
         self.assertIn("access", result)
         self.assertFalse(AuthAccountLock.objects.filter(user=self.user).exists())
 
@@ -82,19 +82,19 @@ class AccountLockTest(TestCase):
         # 2 failed attempts
         self.auth_service.record_attempt = True # internal, auth_service.login calls lock_service.record_attempt
         with self.assertRaises(InvalidCredentialsException):
-            self.auth_service.login(self.email, "wrong1")
+            self.auth_service.login(identifier=self.email, password="wrong1")
         with self.assertRaises(InvalidCredentialsException):
-            self.auth_service.login(self.email, "wrong2")
+            self.auth_service.login(identifier=self.email, password="wrong2")
         
         # 1 successful login
-        self.auth_service.login(self.email, self.password)
+        self.auth_service.login(identifier=self.email, password=self.password)
 
         # 1 more failure — total fails is 3 but non-consecutive
         # Wait, the rule is usually 'recent' failures within a window OR since last success.
         # Our LockService logic: count(status=FAILED) where attempt_time > last_success_time.
         
         with self.assertRaises(InvalidCredentialsException):
-            self.auth_service.login(self.email, "wrong3")
+            self.auth_service.login(identifier=self.email, password="wrong3")
 
         # Threshold is 3, but only 1 failure happened after the last success. So no lock.
         self.assertFalse(AuthAccountLock.objects.filter(user=self.user).exists())
