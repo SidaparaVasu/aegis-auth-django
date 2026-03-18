@@ -238,7 +238,8 @@ document.addEventListener('alpine:init', () => {
         async handleVerifyOTP() {
             const res = await window.API.post('/auth/otp/verify/', {
                 otp_code: this.otp.code,
-                purpose: this.otp.purpose
+                purpose: this.otp.purpose,
+                email: Alpine.store('auth').user.email,
             });
             if (res.ok) {
                 alert('Identity Verified: Code Valid.');
