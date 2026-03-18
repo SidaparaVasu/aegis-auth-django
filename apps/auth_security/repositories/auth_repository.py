@@ -60,6 +60,12 @@ class AuthUserRepository:
     def update_last_login(self, user: AuthUser) -> None:
         AuthUser.objects.filter(pk=user.pk).update(last_login=timezone.now())
 
+    def mark_email_verified(self, user: AuthUser) -> None:
+        """Mark user's email as verified and stamp the time."""
+        user.is_email_verified = True
+        user.email_verified_at = timezone.now()
+        user.save(update_fields=["is_email_verified", "email_verified_at"])
+
     def update_password(self, user: AuthUser, raw_password: str) -> None:
         """Hash and save a new password using Django's hashing (argon2)."""
         user.set_password(raw_password)
