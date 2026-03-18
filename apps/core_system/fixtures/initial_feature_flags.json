@@ -1,0 +1,41 @@
+[
+  {
+    "model": "core_system.featureflag",
+    "pk": 1,
+    "fields": {
+      "feature_key": "otp_login",
+      "description": "Allow users to log in using a one-time password instead of their regular password.",
+      "is_enabled": false,
+      "target_scope": "GLOBAL",
+      "rollout_percentage": 100,
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "core_system.featureflag",
+    "pk": 2,
+    "fields": {
+      "feature_key": "email_verification_required",
+      "description": "Require users to verify their email address before they can log in.",
+      "is_enabled": true,
+      "target_scope": "GLOBAL",
+      "rollout_percentage": 100,
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "core_system.featureflag",
+    "pk": 3,
+    "fields": {
+      "feature_key": "password_reset_via_otp",
+      "description": "Allow password reset via OTP sent to the registered email.",
+      "is_enabled": true,
+      "target_scope": "GLOBAL",
+      "rollout_percentage": 100,
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  }
+]

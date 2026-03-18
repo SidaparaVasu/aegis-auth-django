@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Control Center | DjangoAuth</title>
+    
+    <!-- Design System -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+
+    <!-- Core Scripts -->
+    <script defer src="core/api.js"></script>
+    <script defer src="core/app.js"></script>
+
+    <!-- Frameworks -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body x-data="ctrl">
+    
+    <div id="app-shell">
+        <!-- 1. Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>AuthCenter</span>
+            </div>
+
+            <!-- Client Section -->
+            <div class="nav-section">
+                <div class="nav-section-title">Identity</div>
+                <a href="#gateway" class="nav-link" :class="view === 'gateway' ? 'active' : ''">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+                    <span>Gateway</span>
+                </a>
+                <template x-if="$store.auth.isLoggedIn">
+                    <a href="#security" class="nav-link" :class="view === 'security' ? 'active' : ''">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        <span>Security Vault</span>
+                    </a>
+                </template>
+                <template x-if="$store.auth.isLoggedIn">
+                    <a href="#sessions" class="nav-link" :class="view === 'sessions' ? 'active' : ''">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                        <span>Active Sessions</span>
+                    </a>
+                </template>
+            </div>
+
+            <!-- Admin Section -->
+            <template x-if="$store.auth.isLoggedIn">
+                <div class="nav-section">
+                    <div class="nav-section-title">Operations</div>
+                    <a href="#configs" class="nav-link" :class="view === 'configs' ? 'active' : ''">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                        <span>Configurations</span>
+                    </a>
+                    <a href="#audit" class="nav-link" :class="view === 'audit' ? 'active' : ''">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        <span>Audit Records</span>
+                    </a>
+                </div>
+            </template>
+
+            <div class="mt-auto" x-show="$store.auth.isLoggedIn">
+                <button class="btn btn-secondary" @click="$store.auth.logout()">
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- 2. Main content Area -->
+        <main class="workspace">
+            <!-- Global User Status Badge -->
+            <div class="header-meta">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem">
+                    <div>
+                        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 0.5rem">
+                            <template x-if="$store.auth.isLoggedIn">
+                                <span class="status-pill status-online">SECURE SESSION</span>
+                            </template>
+                            <template x-if="!$store.auth.isLoggedIn">
+                                <span class="status-pill status-offline">UNAUTHENTICATED</span>
+                            </template>
+                            <span class="badge" x-show="$store.auth.user" x-text="$store.auth.user?.username"></span>
+                        </div>
+                        <h1 class="view-title" x-text="view.charAt(0).toUpperCase() + view.slice(1)"></h1>
+                    </div>
+
+                    <!-- Session Controls -->
+                    <template x-if="$store.auth.isLoggedIn">
+                        <div style="display: flex; gap: 1rem; align-items: center; background: rgba(0,0,0,0.2); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border)">
+                            <div style="text-align: center; min-width: 80px">
+                                <div style="font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px">Time Left</div>
+                                <div style="font-family: var(--font-mono); font-size: 1.2rem; color: var(--accent-primary)" x-text="$store.auth.formatTime($store.auth.timeLeft)"></div>
+                            </div>
+                            <div style="width: 1px; height: 30px; background: var(--border)"></div>
+                            <div style="display: flex; flex-direction: column; gap: 4px">
+                                <div style="font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px">Auto-Revoke</div>
+                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+                                    <div style="width: 32px; height: 16px; background: #333; border-radius: 10px; position: relative" @click="$store.auth.toggleAutoRefresh()">
+                                        <div style="width: 12px; height: 12px; background: white; border-radius: 50%; position: absolute; top: 2px; transition: 0.2s"
+                                             :style="{ left: $store.auth.autoRefresh ? '18px' : '2px', background: $store.auth.autoRefresh ? 'var(--accent-primary)' : '#888' }"></div>
+                                    </div>
+                                    <span style="font-size: 0.7rem; color: var(--text-secondary)" x-text="$store.auth.autoRefresh ? 'ENABLED' : 'DISABLED'"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- View: Gateway (Login / Register) -->
+            <div x-show="view === 'gateway'">
+                <div class="card" style="max-width: 500px">
+                    <div style="display: flex; gap: 2rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border)">
+                        <h2 :class="subView === 'login' ? 'active-tab' : 'tab'" @click="subView = 'login'" 
+                            style="padding-bottom: 1rem; cursor:pointer;"
+                            :style="{ borderBottom: subView === 'login' ? '2px solid var(--accent-primary)' : '' }">Login</h2>
+                        <h2 :class="subView === 'register' ? 'active-tab' : 'tab'" @click="subView = 'register'" 
+                            style="padding-bottom: 1rem; cursor:pointer;"
+                            :style="{ borderBottom: subView === 'register' ? '2px solid var(--accent-primary)' : '' }">Register</h2>
+                    </div>
+
+                    <!-- Login Form -->
+                    <div x-show="subView === 'login'">
+                        <div class="form-group">
+                            <label>Email Address</label>
+                            <input type="email" x-model="login.email" placeholder="admin@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" x-model="login.password" placeholder="••••••••">
+                        </div>
+                        <button class="btn btn-primary" @click="handleLogin()">Access Control Center</button>
+                    </div>
+
+                    <!-- Register Form -->
+                    <div x-show="subView === 'register'">
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" x-model="reg.username" placeholder="cyberlord">
+                        </div>
+                        <div class="form-group">
+                            <label>Email Address</label>
+                            <input type="email" x-model="reg.email" placeholder="user@gmail.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" x-model="reg.password" placeholder="••••••••">
+                        </div>
+                        <button class="btn btn-primary" @click="handleRegister()">Establish Identity</button>
+                    </div>
+
+                    <!-- Forgot Password Flow -->
+                    <div x-show="subView === 'forgot'">
+                        <template x-if="forgot.step === 1">
+                            <div>
+                                <h3 style="margin-bottom: 1rem">Step 1: Request Reset</h3>
+                                <div class="form-group">
+                                    <label>Registered Email</label>
+                                    <input type="email" x-model="forgot.email" placeholder="user@example.com">
+                                </div>
+                                <button class="btn btn-primary" @click="handleForgotRequest()">Request Recovery Token</button>
+                            </div>
+                        </template>
+                        <template x-if="forgot.step === 2">
+                            <div>
+                                <h3 style="margin-bottom: 1rem">Step 2: Establish New Credentials</h3>
+                                <div class="form-group">
+                                    <label>Recovery Code (OTP)</label>
+                                    <input type="text" x-model="forgot.token" placeholder="000000">
+                                </div>
+                                <div class="form-group">
+                                    <label>New Password</label>
+                                    <input type="password" x-model="forgot.new_password" placeholder="••••••••">
+                                </div>
+                                <button class="btn btn-primary" @click="handleForgotConfirm()">Finalize Reset</button>
+                            </div>
+                        </template>
+                        <button class="btn btn-secondary mt-4" @click="subView = 'login'" style="margin-top: 1rem">Back to Login</button>
+                    </div>
+
+                    <div style="margin-top: 1.5rem; text-align: center" x-show="subView === 'login'">
+                        <a href="javascript:;" @click="subView = 'forgot'" style="color: var(--accent-secondary); font-size: 0.8rem; text-decoration: none">Advanced Recovery: Forgot Password?</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View: Security (OTP Playground / Vault) -->
+            <div x-show="view === 'security'">
+                <div class="form-grid">
+                    <!-- Password Vault -->
+                    <div class="card">
+                        <h2 style="margin-bottom: 1.5rem">Password Vault</h2>
+                        <div class="form-group">
+                            <label>Current Password</label>
+                            <input type="password" x-model="pwd.old">
+                        </div>
+                        <div class="form-group">
+                            <label>New Password</label>
+                            <input type="password" x-model="pwd.new">
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm Entry</label>
+                            <input type="password" x-model="pwd.confirm">
+                        </div>
+                        <button class="btn btn-primary" @click="handleChangePassword()">Rotate Credentials</button>
+                    </div>
+
+                    <!-- OTP Playground -->
+                    <div class="card">
+                        <h2 style="margin-bottom: 1.5rem">OTP Playground</h2>
+                        <div class="form-group">
+                            <label>OTP Purpose</label>
+                            <select x-model="otp.purpose">
+                                <option value="LOGIN">Authentication Code</option>
+                                <option value="PASSWORD_RESET">Recovery Token</option>
+                                <option value="EMAIL_VERIFICATION">Identity Verification</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-secondary" style="margin-bottom: 1.5rem" @click="handleSendOTP()">Generate Code</button>
+                        
+                        <div class="form-group">
+                            <label>Enter 6-Digit Verification Code</label>
+                            <input type="text" x-model="otp.code" placeholder="000000" maxlength="6" style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem">
+                        </div>
+                        <button class="btn btn-primary" @click="handleVerifyOTP()">Verify Integrity</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View: Sessions -->
+            <div x-show="view === 'sessions'">
+                <div class="card">
+                    <h2 style="margin-bottom: 1.5rem">Connected Devices</h2>
+                    <div style="overflow-x: auto">
+                        <table style="width: 100%; text-align: left; border-collapse: collapse">
+                            <thead>
+                                <tr style="color: var(--text-secondary); font-size: 0.75rem; border-bottom: 1px solid var(--border)">
+                                    <th style="padding: 1rem">IP ADDRESS</th>
+                                    <th style="padding: 1rem">DEVICE / OS</th>
+                                    <th style="padding: 1rem">STATUS</th>
+                                    <th style="padding: 1rem">ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="s in sessions" :key="s.id">
+                                    <tr style="border-bottom: 1px solid var(--border); font-size: 0.85rem">
+                                        <td style="padding: 1rem" x-text="s.ip_address"></td>
+                                        <td style="padding: 1rem" x-text="s.user_agent"></td>
+                                        <td style="padding: 1rem">
+                                            <span class="status-pill status-online">ACTIVE</span>
+                                        </td>
+                                        <td style="padding: 1rem">
+                                            <button class="btn btn-danger" style="width: auto; padding: 4px 12px" @click="terminateSession(s.id)">Revoke</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View: Configs -->
+            <div x-show="view === 'configs'">
+                <div class="card">
+                    <h2 style="margin-bottom: 1.5rem">System Parameters</h2>
+                    <div style="overflow-x: auto">
+                        <table style="width: 100%; text-align: left; border-collapse: collapse">
+                            <thead>
+                                <tr style="color: var(--text-secondary); font-size: 0.75rem; border-bottom: 1px solid var(--border)">
+                                    <th style="padding: 1rem">KEY</th>
+                                    <th style="padding: 1rem">VALUE</th>
+                                    <th style="padding: 1rem">DESCRIPTION</th>
+                                    <th style="padding: 1rem">ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="c in configs" :key="c.config_key">
+                                    <tr style="border-bottom: 1px solid var(--border); font-size: 0.85rem">
+                                        <td style="padding: 1rem; font-family: var(--font-mono); color: var(--accent-secondary)" x-text="c.config_key"></td>
+                                        <td style="padding: 1rem">
+                                            <input type="text" x-model="c.config_value" style="padding: 4px 8px; font-size: 0.8rem; width: 80px">
+                                        </td>
+                                        <td style="padding: 1rem; color: var(--text-secondary)" x-text="c.description"></td>
+                                        <td style="padding: 1rem">
+                                            <button class="btn btn-primary" style="width: auto; padding: 4px 12px; font-size: 0.7rem" @click="handleUpdateConfig(c)">Update</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View: Audit Logs -->
+            <div x-show="view === 'audit'">
+                <div class="card">
+                    <h2 style="margin-bottom: 1.5rem">Audit Timeline</h2>
+                    <div style="overflow-x: auto">
+                        <table style="width: 100%; text-align: left; border-collapse: collapse">
+                            <thead>
+                                <tr style="color: var(--text-secondary); font-size: 0.75rem; border-bottom: 1px solid var(--border)">
+                                    <th style="padding: 1rem">TIMESTAMP</th>
+                                    <th style="padding: 1rem">SEVERITY</th>
+                                    <th style="padding: 1rem">MODULE</th>
+                                    <th style="padding: 1rem">MESSAGE</th>
+                                    <th style="padding: 1rem">USER ID</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="log in auditLogs" :key="log.id">
+                                    <tr style="border-bottom: 1px solid var(--border); font-size: 0.8rem">
+                                        <td style="padding: 1rem; color: var(--text-secondary)" x-text="new Date(log.created_at).toLocaleString()"></td>
+                                        <td style="padding: 1rem">
+                                            <span class="badge" x-text="log.severity"></span>
+                                        </td>
+                                        <td style="padding: 1rem; font-weight: 700" x-text="log.module"></td>
+                                        <td style="padding: 1rem; color: var(--accent-primary)" x-text="log.message"></td>
+                                        <td style="padding: 1rem; color: var(--accent-primary)" x-text="log.payload.user_id"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 3. Final: The Reactive Console -->
+        <aside class="console-pane">
+            <div class="console-header">
+                <div class="console-title">
+                    <span style="color: var(--accent-primary)">●</span>
+                    LIVE INTERCEPTOR
+                </div>
+                <button class="btn btn-secondary" style="width: auto; padding: 2px 8px; font-size: 0.6rem" @click="logs = []">CLS</button>
+            </div>
+            <div class="console-body">
+                <template x-for="log in logs" :key="log.id">
+                    <div class="log-item" :class="log.status >= 400 ? 'error' : 'success'">
+                        <div class="log-header">
+                            <div>
+                                <span :style="{ color: log.status >= 400? 'var(--accent-danger)' : 'var(--accent-primary)' }">
+                                    <span x-text="log.meta.method"></span> 
+                                    <span x-text="log.status"></span>
+                                </span>
+                                <span style="margin-left: 8px" x-text="log.meta.path"></span>
+                            </div>
+                            <div x-text="log.meta.latency"></div>
+                        </div>
+                        <div class="log-data">
+                            <pre x-text="JSON.stringify(log.data, null, 2)"></pre>
+                        </div>
+                    </div>
+                </template>
+                <div x-show="logs.length === 0" style="text-align: center; color: var(--text-secondary); margin-top: 5rem; font-size: 0.8rem">
+                    Waiting for network packets...
+                </div>
+            </div>
+        </aside>
+    </div>
+
+</body>
+</html>
