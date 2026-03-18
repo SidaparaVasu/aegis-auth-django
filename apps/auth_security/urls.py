@@ -14,6 +14,8 @@ urlpatterns = [
     # Registration & Login
     path("register/", views.RegisterAPIView.as_view(), name="register"),
     path("login/", views.LoginAPIView.as_view(), name="login"),
+    path("login/otp/request/", views.OTPLoginRequestAPIView.as_view(), name="otp_login_request"),
+    path("login/otp/confirm/", views.OTPLoginConfirmAPIView.as_view(), name="otp_login_confirm"),
     path("logout/", views.LogoutAPIView.as_view(), name="logout"),
     path("token/refresh/", views.TokenRefreshAPIView.as_view(), name="token_refresh"),
 

@@ -143,6 +143,17 @@ class OTPService:
             raise OTPInvalidException("Invalid or expired OTP code.")
 
         self.otp_repo.mark_verified(otp)
+
+        # ------------------------------------------------------------------
+        # IMPLICIT EMAIL VERIFICATION
+        # Since all our OTPs are delivered via email, successfully matching
+        # ANY OTP serves as cryptographic proof they own the inbox.
+        # ------------------------------------------------------------------
+        if not user.is_email_verified:
+            from apps.auth_security.repositories.auth_repository import AuthUserRepository
+            AuthUserRepository().mark_email_verified(user)
+            logger.info("Email verified implicitly: user_id=%s via OTP purpose=%s", user.id, purpose)
+
         logger.info("OTP verified: user_id=%s purpose=%s", user.id, purpose)
         return True
 

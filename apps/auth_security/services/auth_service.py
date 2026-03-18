@@ -155,7 +155,7 @@ class AuthService:
 
     def login(
         self,
-        email: str,
+        identifier: str,
         password: str,
         ip_address: str | None = None,
         user_agent: str | None = None,
@@ -164,7 +164,7 @@ class AuthService:
         Authenticate a user and issue JWT tokens.
 
         Security rules:
-            - All errors (wrong email, wrong password, inactive, locked) raise the
+            - All errors (wrong email/username, wrong password, inactive, locked) raise the
               SAME generic message to prevent user enumeration.
             - Attempts are always recorded BEFORE credential verification.
 
@@ -178,14 +178,14 @@ class AuthService:
         ip = ip_address or ""
 
         # Look up user (we'll use a generic error in all failure cases)
-        user = self.user_repo.get_by_email(email)
+        user = self.user_repo.get_by_identifier(identifier)
 
         # Check account lock early (before recording attempt, to avoid spam on locked accounts)
         if user:
             lock = self.lock_service.check_lock(user)
             if lock:
                 # Still record the attempt
-                self.lock_service.record_attempt(email, ip, AttemptStatus.FAILED)
+                self.lock_service.record_attempt(identifier, ip, AttemptStatus.FAILED)
                 raise AccountLockedException(
                     f"Your account is temporarily locked. Try again after "
                     f"{lock.locked_until.strftime('%H:%M UTC')}."
@@ -193,21 +193,39 @@ class AuthService:
 
         # Check inactive user
         if user and not user.is_active:
-            self.lock_service.record_attempt(email, ip, AttemptStatus.FAILED)
-            raise InvalidCredentialsException("Invalid email or password.")
+            self.lock_service.record_attempt(identifier, ip, AttemptStatus.FAILED)
+            raise InvalidCredentialsException("Invalid credentials.")
 
         # Validate password (use same error for non-existent user)
         credentials_valid = user is not None and user.check_password(password)
 
         if not credentials_valid:
-            self.lock_service.record_attempt(email, ip, AttemptStatus.FAILED)
+            self.lock_service.record_attempt(identifier, ip, AttemptStatus.FAILED)
             if user:
-                self.lock_service.check_and_lock(user, email, ip)
-            raise InvalidCredentialsException("Invalid email or password.")
+                self.lock_service.check_and_lock(user, identifier, ip)
+            raise InvalidCredentialsException("Invalid credentials.")
 
         # --- Credentials valid from here ---
 
-        self.lock_service.record_attempt(email, ip, AttemptStatus.SUCCESS)
+        # -------------------------------------------------------------
+        # FIRST-TIME EMAIL VERIFICATION INTERCEPTOR
+        # If the feature is ON, and user is NOT verified, halt login.
+        # Send an OTP and return 403 containing VERIFICATION_REQUIRED.
+        # -------------------------------------------------------------
+        from apps.core_system.services.feature_flag_service import FeatureFlagService
+        if FeatureFlagService().is_enabled("email_verification_required"):
+            if not user.is_email_verified:
+                from apps.auth_security.services.otp_service import OTPService
+                from apps.auth_security.constants import OTPPurpose
+                from common.exceptions import EmailVerificationRequiredException
+
+                # Dispatch OTP to email before throwing exception
+                OTPService().send_otp(user=user, purpose=OTPPurpose.EMAIL_VERIFICATION)
+
+                # Throw a specialized exception that the frontend can catch
+                raise EmailVerificationRequiredException()
+
+        self.lock_service.record_attempt(identifier, ip, AttemptStatus.SUCCESS)
         self.user_repo.update_last_login(user)
 
         # Issue JWT + create session
@@ -219,6 +237,68 @@ class AuthService:
             user_id=user.id, ip_address=ip, user_agent=user_agent
         )
         logger.info("User logged in: user_id=%s", user.id)
+
+        return {
+            "access": access_token,
+            "refresh": refresh_token,
+            "user": user,
+        }
+
+    def otp_login(
+        self,
+        identifier: str,
+        otp_code: str,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+    ) -> dict:
+        """
+        Authenticate a user via a one-time password and issue JWT tokens.
+        """
+        ip = ip_address or ""
+
+        user = self.user_repo.get_by_identifier(identifier)
+
+        # Check account lock early
+        if user:
+            lock = self.lock_service.check_lock(user)
+            if lock:
+                self.lock_service.record_attempt(identifier, ip, AttemptStatus.FAILED)
+                raise AccountLockedException(
+                    f"Your account is temporarily locked. Try again after "
+                    f"{lock.locked_until.strftime('%H:%M UTC')}."
+                )
+
+        if user and not user.is_active:
+            self.lock_service.record_attempt(identifier, ip, AttemptStatus.FAILED)
+            raise InvalidCredentialsException("Invalid credentials.")
+
+        if not user:
+            self.lock_service.record_attempt(identifier, ip, AttemptStatus.FAILED)
+            raise InvalidCredentialsException("Invalid credentials.")
+
+        # Verify the OTP via standard OTPService
+        try:
+            from apps.auth_security.services.otp_service import OTPService
+            from apps.auth_security.constants import OTPPurpose
+            OTPService().verify_otp(user=user, otp_code=otp_code, purpose=OTPPurpose.LOGIN)
+        except Exception:
+            self.lock_service.record_attempt(identifier, ip, AttemptStatus.FAILED)
+            self.lock_service.check_and_lock(user, identifier, ip)
+            raise InvalidCredentialsException("Invalid credentials.")
+
+        # --- OTP valid from here ---
+        self.lock_service.record_attempt(identifier, ip, AttemptStatus.SUCCESS)
+        self.user_repo.update_last_login(user)
+
+        # Issue JWT + create session
+        access_token, refresh_token, session_key = self.session_service.create_session(
+            user=user, ip_address=ip, user_agent=user_agent
+        )
+
+        self.audit_service.log_login(
+            user_id=user.id, ip_address=ip, user_agent=user_agent
+        )
+        logger.info("User logged in via OTP: user_id=%s", user.id)
 
         return {
             "access": access_token,

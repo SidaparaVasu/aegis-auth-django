@@ -72,9 +72,65 @@ class LoginAPIView(APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        identifier = serializer.validated_data["identifier"]
+
         result = AuthService().login(
-            email=serializer.validated_data["email"],
+            identifier=identifier,
             password=serializer.validated_data["password"],
+            ip_address=request.META.get("REMOTE_ADDR"),
+            user_agent=request.META.get("HTTP_USER_AGENT")
+        )
+
+        return success_response(
+            message="Login successful.",
+            data={
+                "access": result["access"],
+                "refresh": result["refresh"],
+                "user": AuthUserSerializer(result["user"]).data
+            }
+        )
+
+
+class OTPLoginRequestAPIView(APIView):
+    """Step 1 — Request OTP for passwordless login."""
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [LoginRateThrottle]
+    
+    from apps.auth_security.serializers import OTPLoginRequestSerializer
+    serializer_class = OTPLoginRequestSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        from django.contrib.auth import get_user_model
+        from apps.auth_security.repositories.auth_repository import AuthUserRepository
+        user = AuthUserRepository().get_by_identifier(serializer.validated_data["identifier"])
+
+        # Security: Don't leak existence of the identifier.
+        if user:
+            OTPService().send_otp(user=user, purpose=OTPPurpose.LOGIN)
+
+        return success_response(message="If a matching account exists, a login code has been sent.")
+
+
+class OTPLoginConfirmAPIView(APIView):
+    """Step 2 — Confirm passwordless login via OTP."""
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [LoginRateThrottle]
+
+    from apps.auth_security.serializers import OTPLoginConfirmSerializer
+    serializer_class = OTPLoginConfirmSerializer
+
+    @extend_schema(responses={200: AuthUserSerializer})
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Let the AuthService handle the OTP verification, locks, and issuing JWT in one step
+        result = AuthService().otp_login(
+            identifier=serializer.validated_data["identifier"],
+            otp_code=serializer.validated_data["otp_code"],
             ip_address=request.META.get("REMOTE_ADDR"),
             user_agent=request.META.get("HTTP_USER_AGENT")
         )

@@ -105,6 +105,17 @@ class AuthUser(AbstractBaseUser, PermissionsMixin):
         help_text="Grants access to Django admin site.",
     )
 
+    # Email Verification Tracking
+    is_email_verified = models.BooleanField(
+        default=False,
+        help_text="True if the user has verified their email via OTP.",
+    )
+    email_verified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when the email was successfully verified.",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

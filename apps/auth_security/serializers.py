@@ -42,7 +42,7 @@ class AuthUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "email", "username", "is_active", "last_login", "created_at", "profile"]
+        fields = ["id", "email", "username", "is_active", "is_email_verified", "email_verified_at", "last_login", "created_at", "profile"]
         read_only_fields = fields
 
 
@@ -67,7 +67,9 @@ class RegisterSerializer(serializers.Serializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    identifier = serializers.CharField(
+        help_text="Login using either email address or username.",
+    )
     password = serializers.CharField(write_only=True)
 
 
@@ -105,6 +107,23 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp_code = serializers.CharField(max_length=10)
     new_password = serializers.CharField()
+
+
+# ---------------------------------------------------------------------------
+# OTP Login Flow
+# ---------------------------------------------------------------------------
+
+class OTPLoginRequestSerializer(serializers.Serializer):
+    """Step 1: Request an OTP for passwordless login."""
+    identifier = serializers.CharField(
+        help_text="Login using either email address or username.",
+    )
+
+
+class OTPLoginConfirmSerializer(serializers.Serializer):
+    """Step 2: Confirm passwordless login with OTP."""
+    identifier = serializers.CharField()
+    otp_code = serializers.CharField(max_length=10)
 
 
 # ---------------------------------------------------------------------------

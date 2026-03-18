@@ -54,17 +54,17 @@ class AuthUserAdmin(BaseUserAdmin):
     add_form = AuthUserCreationForm
     inlines = [AuthUserProfileInline]
 
-    list_display = ("email", "username", "is_active", "is_staff", "is_superuser", "created_at")
-    list_filter = ("is_active", "is_staff", "is_superuser")
+    list_display = ("email", "username", "is_active", "is_email_verified", "is_staff", "is_superuser", "created_at")
+    list_filter = ("is_active", "is_email_verified", "is_staff", "is_superuser")
     search_fields = ("email", "username")
     ordering = ("email",)
-    readonly_fields = ("created_at", "updated_at", "last_login")
+    readonly_fields = ("created_at", "updated_at", "email_verified_at", "last_login")
 
     fieldsets = (
         ("Credentials", {"fields": ("email", "username", "password")}),
-        ("Status", {"fields": ("is_active", "is_staff", "is_superuser")}),
+        ("Status", {"fields": ("is_active", "is_email_verified", "is_staff", "is_superuser")}),
         ("Permissions", {"fields": ("groups", "user_permissions"), "classes": ("collapse",)}),
-        ("Timestamps", {"fields": ("last_login", "created_at", "updated_at"), "classes": ("collapse",)}),
+        ("Timestamps", {"fields": ("last_login", "email_verified_at", "created_at", "updated_at"), "classes": ("collapse",)}),
     )
     add_fieldsets = (
         (None, {
